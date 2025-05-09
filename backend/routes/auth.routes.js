@@ -14,22 +14,41 @@ router.post(
     body('password')
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters'),
+    body('role')
+      .isIn(['student', 'service', 'admin'])
+      .withMessage('Role must be either student, service or admin'),
+    body('studentId')
+      .custom((value, { req }) => {
+        if (req.body.role === 'student' && !value) {
+          throw new Error('Student ID is required for student role');
+        }
+        return true;
+      }),
   ],
   async (req, res) => {
     try {
-      const { name, email, password } = req.body;
-
+      const { name, email, password, role, studentId } = req.body;
+      
       // Check if user exists
       let user = await User.findOne({ email });
       if (user) {
         return res.status(400).json({ message: 'User already exists' });
       }
 
-      user = await User.create({
+      // Create user object with required fields
+      const userObj = {
         name,
         email,
         password,
-      });
+        role
+      };
+
+      // Add studentId if role is student
+      if (role === 'student') {
+        userObj.studentId = studentId;
+      }
+
+      user = await User.create(userObj);
 
       // Create token
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
@@ -44,6 +63,7 @@ router.post(
           name: user.name,
           email: user.email,
           role: user.role,
+          ...(user.role === 'student' && { studentId: user.studentId }),
         },
       });
     } catch (err) {
