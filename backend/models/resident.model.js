@@ -1,28 +1,33 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const residentSchema = new mongoose.Schema({
   studentId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Please provide a student ID']
+    ref: "User",
+    required: [false, "Please provide a student ID"],
+  },
+  accommodationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Accommodation",
+    required: [true, "Please provide an accommodation ID"],
   },
   roomNumber: {
     type: String,
-    required: [true, 'Please provide a room number']
+    required: [true, "Please provide a room number"],
   },
   enrollmentDate: {
     type: Date,
-    required: [true, 'Please provide an enrollment date']
+    default: Date.now(),
   },
   status: {
     type: String,
-    enum: ['active', 'inactive'],
-    default: 'active'
+    enum: ["approved", "rejected", "paid", "pending"],
+    default: "pending",
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
 });
 
-module.exports = mongoose.model('Resident', residentSchema);
+// Add index for faster querying by studentId and createdBy
+
+residentSchema.index({ studentId: 1 });
+
+module.exports = mongoose.model("Resident", residentSchema);

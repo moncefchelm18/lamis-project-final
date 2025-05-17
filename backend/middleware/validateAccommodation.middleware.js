@@ -1,51 +1,42 @@
-const validateAccommodation = (req, res, next) => {
-  const { name, description, address, phone, contactEmail, roomCount, mainImage, galleryImages } = req.body;
+exports.validateResidency = (req, res, next) => {
+  const { title, wilaya } = req.body;
+  const errors = [];
 
-  // Check for required fields
-  if (!name || !description || !address || !phone || !contactEmail || !mainImage || roomCount === undefined) {
-    return res.status(400).json({
-      message: 'Please provide all required fields'
-    });
+  // Check required fields
+  if (!title || title.trim() === "") {
+    errors.push("Title is required");
   }
 
-  // Validate phone number (8-15 digits)
-  const phoneRegex = /^\d{8,15}$/;
-  if (!phoneRegex.test(phone)) {
-    return res.status(400).json({
-      message: 'Phone number must be between 8 and 15 digits'
-    });
+  if (!wilaya || wilaya.trim() === "") {
+    errors.push("Wilaya is required");
   }
 
-  // Validate email
-  const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-  if (!emailRegex.test(contactEmail)) {
-    return res.status(400).json({
-      message: 'Please provide a valid email address'
-    });
+  // Validate numberOfRooms if provided
+  if (req.body.numberOfRooms !== undefined) {
+    const numberOfRooms = parseInt(req.body.numberOfRooms);
+    if (isNaN(numberOfRooms) || numberOfRooms < 0) {
+      errors.push("Number of rooms must be a non-negative number");
+    }
   }
 
-  // Validate roomCount
-  if (roomCount < 0) {
-    return res.status(400).json({
-      message: 'Room count cannot be negative'
-    });
+  // Validate amenities if provided
+  if (req.body.amenities !== undefined && !Array.isArray(req.body.amenities)) {
+    errors.push("Amenities must be an array");
   }
 
-  // Validate mainImage URL
-  if (!mainImage.trim()) {
-    return res.status(400).json({
-      message: 'Main image URL cannot be empty'
-    });
+  // Validate images if provided
+  if (req.body.images !== undefined && !Array.isArray(req.body.images)) {
+    errors.push("Images must be an array");
   }
 
-  // Validate galleryImages array
-  if (galleryImages && !Array.isArray(galleryImages)) {
+  // If there are validation errors, return them
+  if (errors.length > 0) {
     return res.status(400).json({
-      message: 'Gallery images must be an array of URLs'
+      success: false,
+      message: "Validation error",
+      errors,
     });
   }
 
   next();
 };
-
-module.exports = validateAccommodation;

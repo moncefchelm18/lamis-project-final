@@ -13,6 +13,31 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
   }
 });
 
+router.get('/profile', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password'); // Exclude password
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.json({
+      success: true,
+      data: { // Consistent 'data' wrapper
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        // Add any other fields from User model you want to send to profile page
+        // phone: user.phone, 
+        // emergencyContact: user.emergencyContact,
+        // emergencyPhone: user.emergencyPhone,
+      },
+    });
+  } catch (err) {
+    console.error("Error fetching user profile:", err);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+});
+
 // Update user profile
 router.put('/profile', protect, async (req, res) => {
   try {

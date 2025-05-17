@@ -1,5 +1,5 @@
-const Resident = require('../models/resident.model');
-const User = require('../models/user.model');
+const Resident = require("../models/resident.model");
+const User = require("../models/user.model");
 
 class ResidentService {
   constructor() {
@@ -9,17 +9,61 @@ class ResidentService {
   async getRoomCurrentCapacity(roomNumber) {
     const activeResidents = await Resident.countDocuments({
       roomNumber,
-      status: 'active'
+      status: "active",
     });
     return activeResidents;
   }
 
+  async getResidentById(id) {
+    console.log("Resident ID:", id); // Log the resident ID for debugging
+    const resident = await Resident.findById(id)
+      .populate("studentId", "firstName lastName username")
+      .exec();
+    if (!resident) {
+      const error = new Error("Resident not found");
+      error.statusCode = 404;
+      throw error;
+    }
+    return resident;
+  }
+
+  async getResidencyByUserId(userId) {
+    console.log("User IDddddddddddddddd:", userId); // Log the user ID for debugging
+    const residents = await Resident.find({ studentId: userId })
+      .populate("studentId", "firstName lastName username")
+      .exec();
+    if (!residents) {
+      const error = new Error("No residents found for this user");
+      error.statusCode = 404;
+      throw error;
+    }
+    return residents;
+  }
+
+  async getAllResidents(page = 1, limit = 10) {
+    const startIndex = (page - 1) * limit;
+    const residents = await Resident.find()
+      .skip(startIndex)
+      .limit(limit)
+      .populate("studentId", "firstName lastName username")
+      .exec();
+    const total = await Resident.countDocuments();
+    return {
+      results: residents,
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+    };
+  }
+
   async addResident(residentData) {
     // Check room capacity
-    const currentCapacity = await this.getRoomCurrentCapacity(residentData.roomNumber);
-    
+    const currentCapacity = await this.getRoomCurrentCapacity(
+      residentData.roomNumber
+    );
+
     if (currentCapacity >= this.ROOM_CAPACITY) {
-      const error = new Error('Room is at full capacity');
+      const error = new Error("Room is at full capacity");
       error.statusCode = 409;
       throw error;
     }
@@ -31,32 +75,37 @@ class ResidentService {
 
   async deleteResident(id) {
     const resident = await Resident.findById(id);
-    
+
     if (!resident) {
-      const error = new Error('Resident not found');
+      const error = new Error("Resident not found");
       error.statusCode = 404;
       throw error;
     }
 
-    resident.status = 'inactive';
+    resident.status = "inactive";
     await resident.save();
     return resident;
   }
 
   async updateResident(id, updateData) {
     const resident = await Resident.findById(id);
-    
+
     if (!resident) {
-      const error = new Error('Resident not found');
+      const error = new Error("Resident not found");
       error.statusCode = 404;
       throw error;
     }
 
     // If room number is being updated, check capacity
-    if (updateData.roomNumber && updateData.roomNumber !== resident.roomNumber) {
-      const currentCapacity = await this.getRoomCurrentCapacity(updateData.roomNumber);
+    if (
+      updateData.roomNumber &&
+      updateData.roomNumber !== resident.roomNumber
+    ) {
+      const currentCapacity = await this.getRoomCurrentCapacity(
+        updateData.roomNumber
+      );
       if (currentCapacity >= this.ROOM_CAPACITY) {
-        const error = new Error('Target room is at full capacity');
+        const error = new Error("Target room is at full capacity");
         error.statusCode = 409;
         throw error;
       }
@@ -64,7 +113,8 @@ class ResidentService {
 
     // Update allowed fields
     if (updateData.roomNumber) resident.roomNumber = updateData.roomNumber;
-    if (updateData.enrollmentDate) resident.enrollmentDate = new Date(updateData.enrollmentDate);
+    if (updateData.enrollmentDate)
+      resident.enrollmentDate = new Date(updateData.enrollmentDate);
     if (updateData.fullName) resident.fullName = updateData.fullName;
 
     await resident.save();
@@ -73,7 +123,7 @@ class ResidentService {
 
   async searchResidents(query, page = 1, limit = 10) {
     if (!query) {
-      const error = new Error('Search query is required');
+      const error = new Error("Search query is required");
       error.statusCode = 400;
       throw error;
     }
@@ -83,36 +133,36 @@ class ResidentService {
     // Find users matching the query
     const matchingUsers = await User.find({
       $or: [
-        { firstName: { $regex: query, $options: 'i' } },
-        { lastName: { $regex: query, $options: 'i' } },
-        { username: { $regex: query, $options: 'i' } }
-      ]
-    }).select('_id');
+        { firstName: { $regex: query, $options: "i" } },
+        { lastName: { $regex: query, $options: "i" } },
+        { username: { $regex: query, $options: "i" } },
+      ],
+    }).select("_id");
 
-    const userIds = matchingUsers.map(user => user._id);
+    const userIds = matchingUsers.map((user) => user._id);
 
     // Find residents with matching student IDs or directly by ID
     const filter = {
       $or: [
         { studentId: { $in: userIds } },
-        { _id: mongoose.Types.ObjectId.isValid(query) ? query : null }
-      ]
+        { _id: mongoose.Types.ObjectId.isValid(query) ? query : null },
+      ],
     };
 
     const [residents, total] = await Promise.all([
       Resident.find(filter)
         .skip(skip)
         .limit(limit)
-        .populate('studentId', 'firstName lastName username')
+        .populate("studentId", "firstName lastName username")
         .exec(),
-      Resident.countDocuments(filter)
+      Resident.countDocuments(filter),
     ]);
 
     return {
       results: residents,
       total,
       page: parseInt(page),
-      limit: parseInt(limit)
+      limit: parseInt(limit),
     };
   }
 }
