@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+    // You might need these depending on your setup, but often just paths is enough
+    // "target": "ESNext",
+    // "module": "ESNext",
+    // "moduleResolution": "node",
+    // "jsx": "react-jsx",
+    // "allowJs": true // Important if you have JS/JSX files
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

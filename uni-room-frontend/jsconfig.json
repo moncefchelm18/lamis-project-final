@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"], // Specify which folders to include
+  "exclude": ["node_modules", "dist"] // Specify folders to exclude
+}
