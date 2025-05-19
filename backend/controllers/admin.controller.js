@@ -105,7 +105,7 @@ exports.approveUser = async (req, res) => {
 };
 
 // Reject a user
-exports.rejectUser = async (req, res) => {
+exports.deleteUserAsAdmin = async (req, res) => {
   try {
     const { userId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -121,12 +121,10 @@ exports.rejectUser = async (req, res) => {
         .json({ success: false, message: "User not found." });
     }
 
-    // Prevent deleting the initial/main admin account
-    if (
-      user.email === (process.env.INITIAL_ADMIN_EMAIL || "admin@gmail.com") &&
-      user.role === "admin"
-    ) {
-      // A more robust check might be to see if it's the *only* approved admin
+    // Prevent deleting the initial/main admin account or self-deletion
+    const initialAdminEmail =
+      process.env.INITIAL_ADMIN_EMAIL || "admin@gmail.com";
+    if (user.email === initialAdminEmail && user.role === "admin") {
       const approvedAdminCount = await User.countDocuments({
         role: "admin",
         status: "approved",
@@ -140,25 +138,24 @@ exports.rejectUser = async (req, res) => {
           });
       }
     }
-
-    // If the user is already approved, you might want a different flow or stronger confirmation.
-    // For now, we'll allow deletion of approved users (except potentially the main admin).
-    // if (user.status === 'approved') {
-    //   console.warn(`Attempting to delete an already approved user: ${user.email}`);
-    // }
+    if (req.user.id === userId) {
+      // Check if admin is trying to delete themselves
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Admins cannot delete their own account this way.",
+        });
+    }
 
     await User.findByIdAndDelete(userId);
 
-    // TODO: Optionally send an email notification to the user (if they provided a valid email for contact before deletion)
-    // This is tricky as their account is now gone. Usually, for rejection, you'd inform them first.
-    // sendEmail(user.email, "Account Registration Update", "Your UniRoom account registration was not approved and has been removed.");
-
     res.json({
       success: true,
-      message: `User ${user.name} and their registration data have been deleted.`,
+      message: `User ${user.name} and their account data have been deleted.`,
     });
   } catch (err) {
-    console.error("Error deleting user (rejecting):", err);
+    console.error("Error deleting user by admin:", err);
     res
       .status(500)
       .json({ success: false, message: "Server Error while deleting user." });

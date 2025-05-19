@@ -9,7 +9,7 @@ const {
   // Import new controller functions for user management
   getPendingUsers,
   approveUser,
-  rejectUser,
+  deleteUserAsAdmin,
   getAllSystemUsers, // For general user listing by admin
 } = require("../controllers/admin.controller"); // You'll create these controller functions
 
@@ -39,7 +39,7 @@ router.patch(
 );
 
 // Reject a user
-router.patch("/users/:userId/reject", protect, authorize("admin"), rejectUser);
+router.delete("/users/:userId", protect, authorize("admin"), deleteUserAsAdmin); // Changed here
 
 // You might also want routes to suspend/unsuspend users, change roles, etc.
 

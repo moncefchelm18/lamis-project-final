@@ -170,9 +170,9 @@ export default function AdminUserApprovals() {
       if (actionType === "approve") {
         response = await apiClient.patch(endpoint);
       } else if (actionType === "reject") {
-        response = await apiClient.delete(endpoint.replace("/reject", "")); // Assuming reject means delete, so use DELETE on /admin/users/:userId
-        // OR if your backend keeps /reject for DELETE:
-        // response = await apiClient.patch(endpoint); // if your backend PATCH /reject still does a delete
+        console.log("Deleting userXXXXX:", userId);
+        response = await apiClient.delete(`/admin/users/${userId}`); // Assuming reject means delete, so use DELETE on /admin/users/:userId
+        console.log(apiClient);
       }
       // if (response.data.success) {
       //   toast({
@@ -289,16 +289,14 @@ export default function AdminUserApprovals() {
     // Close dialog first
     setIsConfirmDialogOpen(false);
 
-    const endpoint = `/admin/users/${userId}/${actionType}`;
-
     try {
-      // setIsLoading(true); // You might want a specific loading state for the dialog action
       let response;
       if (actionType === "approve") {
-        response = await apiClient.patch(endpoint);
+        // Endpoint from admin.routes.js: PATCH /api/admin/users/:userId/approve
+        response = await apiClient.patch(`/admin/users/${userId}/approve`);
       } else if (actionType === "reject") {
-        // Assuming reject means delete
-        response = await apiClient.delete(`/admin/users/${userId}`); // DELETE /admin/users/:userId
+        // Endpoint from admin.routes.js: DELETE /api/admin/users/:userId
+        response = await apiClient.delete(`/admin/users/${userId}`);
       }
 
       if (response.data.success) {
