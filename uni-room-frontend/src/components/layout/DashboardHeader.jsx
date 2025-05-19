@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// DashboardHeader.jsx
+"use client";
+
+import React, { useState, useEffect, useContext } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,70 +15,93 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { AuthContext } from "@/context/AuthContext"; // Ensure this path is correct
 
 // Icons
 import {
-  Building,
+  // Building, // Original icon for logo, replaced by img
   Menu,
-  Bell, // Notification
-  Settings, // Cog / Settings -> New Dropdown Trigger
-  UserCircle, // Profile Item
-  LogOut, // Logout Item
-  Loader2, // Loading
+  Bell,
+  Settings,
+  UserCircle,
+  LogOut,
+  Loader2,
+  ChevronDown, // For dropdown indicator
 } from "lucide-react";
 
-// Navigation
 import DashboardNav from "@/components/layout/DashboardNav"; // Ensure path is correct
-import logo from "@/assets/logos/logo.png";
-import { Toaster } from "../ui/toaster"; // Ensure path is correct
+import logo from "@/assets/logos/logo.png"; // Ensure path is correct
 
-// Helper to get initials
 const getInitials = (name = "") => {
-  if (!name) return "?";
+  if (!name || typeof name !== "string") return "?";
   return name
     .split(" ")
     .map((n) => n[0])
+    .filter(Boolean) // Ensure no empty strings if there are multiple spaces
     .slice(0, 2)
     .join("")
     .toUpperCase();
 };
 
 export default function DashboardHeader() {
-  const [userData, setUserData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation(); // To close mobile sheet on navigation
 
-  // Load user data from localStorage
+  const authContext = useContext(AuthContext);
+
+  // This component should not render if AuthContext is not available.
+  // This typically means AuthProvider is not wrapping this part of the app.
+  if (!authContext) {
+    console.error(
+      "DashboardHeader: AuthContext is missing. Ensure this component is wrapped by AuthProvider."
+    );
+    // Render a minimal or error header
+    return (
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
+        <div className="container mx-auto flex h-14 items-center justify-center text-destructive">
+          Auth Context Error
+        </div>
+      </header>
+    );
+  }
+
+  const {
+    user: contextUser,
+    logout: contextLogout,
+    isLoadingAuth,
+  } = authContext;
+
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+
+  // Derived display values from contextUser
+  const displayName = contextUser?.name || "User";
+  const displayRole = contextUser?.role || "guest"; // Default to 'guest' or similar if no role
+  const displayInitials = getInitials(contextUser?.name);
+  const userAvatarUrl =
+    contextUser?.photo || contextUser?.profileImageUrl || ""; // Example properties for avatar
+
+  // Close mobile sheet on route change
   useEffect(() => {
-    setIsLoading(true);
-    try {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        setUserData(JSON.parse(storedUser));
-      } else {
-        console.warn("No user data in localStorage.");
-      }
-    } catch (error) {
-      console.error("Error parsing localStorage user data:", error);
-      localStorage.removeItem("user");
-      localStorage.removeItem("token");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [navigate]);
+    setIsMobileSheetOpen(false);
+  }, [location.pathname]);
 
-  // Handle Logout
   const handleLogout = () => {
-    console.log("Logging out...");
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    setUserData(null);
-    navigate("/login");
-    toast({ title: "Logged Out" });
+    contextLogout(); // This will navigate to /login via AuthContext
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
   };
 
-  // Placeholder for notifications
+  const handleNavigateToProfile = () => {
+    if (!contextUser?.role) {
+      navigate("/dashboard/student/profile"); // Fallback
+      return;
+    }
+    navigate(`/dashboard/${contextUser.role}/profile`);
+  };
+
   const showNotifications = () => {
     toast({
       title: "Notifications",
@@ -83,172 +109,149 @@ export default function DashboardHeader() {
     });
   };
 
-  // Loading State
-  if (isLoading) {
+  if (isLoadingAuth && !contextUser) {
     return (
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-        <div className="container flex h-14 items-center justify-between">
-          <div className="flex items-center gap-2">
-            {/* <Building className="h-5 w-5 text-rose-500" />{" "}
-            <span className="font-bold">UniRoom</span>
-             */}
-            <img src={logo} alt="UniRoom Logo" className="h-6" />
-          </div>
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur px-4 sm:px-8">
+        <div className="container mx-auto flex h-14 items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <img src={logo} alt="UniRoom Logo" className="h-7" />
+          </Link>
           <div className="flex items-center gap-2 text-muted-foreground">
-            {" "}
-            <Loader2 className="h-4 w-4 animate-spin" /> <span>Loading...</span>{" "}
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Loading...</span>
           </div>
         </div>
       </header>
     );
   }
 
-  // Role extraction after loading and check
-  const role = userData?.role || "unknown";
-
   return (
-    <header className="sticky top-0 z-50 px-8 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
-        {/* --- Mobile Menu (Sheet) - CORRECTED --- */}
-        <div className="mr-4 flex md:hidden">
-          <Sheet>
-            {/* REMOVED asChild from SheetTrigger */}
-            {/* Make SheetTrigger the button directly */}
-            <SheetTrigger
-              as={Button}
-              variant="outline"
-              size="icon"
-              className="mr-2"
-            >
-              <Menu className="h-4 w-4" />
-              <span className="sr-only">Menu</span>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-8">
+      <div className="container mx-auto flex h-14 items-center">
+        {/* Mobile Menu Trigger */}
+        <div className="md:hidden mr-2">
+          <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="shrink-0">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle Menu</span>
+              </Button>
             </SheetTrigger>
             <SheetContent
               side="left"
-              className="w-[240px] sm:w-[280px] p-0 pt-6"
+              className="w-[250px] sm:w-[280px] p-0 pt-6 flex flex-col"
             >
-              <div className="flex h-full flex-col">
-                <div className="px-4 flex items-center gap-2 pb-4 border-b mb-4">
-                  {/* <Building className="h-6 w-6 text-rose-500" />
-                  <span className="text-lg font-bold">UniRoom</span> */}
-                  <img src={logo} alt="UniRoom Logo" className="h-6 px-4" />
-                </div>
-                <div className="flex-1 px-4">
-                  <DashboardNav role={role} isMobile={true} />
-                </div>
+              <div className="px-4 pb-4 border-b mb-4">
+                <Link
+                  to="/"
+                  className="flex items-center gap-2"
+                  onClick={() => setIsMobileSheetOpen(false)}
+                >
+                  <img src={logo} alt="UniRoom Logo" className="h-7" />
+                  <span className="font-bold text-lg">UniRoom</span>
+                </Link>
+              </div>
+              <div className="flex-1 px-2 overflow-y-auto">
+                <DashboardNav
+                  role={displayRole}
+                  isMobile={true}
+                  onNavigate={() => setIsMobileSheetOpen(false)}
+                />
               </div>
             </SheetContent>
           </Sheet>
         </div>
 
-        {/* --- Left Side (Desktop) --- */}
-        <div className="items-center gap-2 hidden md:flex">
-          <Link to="/" className="flex items-center gap-2 mr-4">
-            {/* <Building className="h-5 w-5 text-rose-500" />
-            <span className="font-bold text-lg">UniRoom</span> */}
-
-            <img src={logo} alt="UniRoom Logo" className="h-6 px-2" />
-          </Link>
-          <span className="text-sm font-medium text-muted-foreground capitalize border-l pl-4">
-            {role || "Portal"}
+        {/* Desktop Logo and Role */}
+        <Link to="/" className="items-center gap-2 hidden md:flex mr-6">
+          <img src={logo} alt="UniRoom Logo" className="h-7" />
+          <span className="sr-only">UniRoom</span>
+        </Link>
+        <div className="hidden md:flex items-center border-l border-border pl-4">
+          <span className="text-sm font-medium text-muted-foreground capitalize">
+            {displayRole}
           </span>
         </div>
 
-        {/* === Right Side Actions === */}
-        <div className="flex flex-1 items-center justify-end space-x-3 sm:space-x-4">
-          {userData ? (
+        {/* Right Side Actions */}
+        <div className="ml-auto flex items-center space-x-2 sm:space-x-3">
+          {contextUser ? (
             <>
-              {/* 1. Notification Icon */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full relative"
+                className="rounded-full relative hidden sm:flex"
                 onClick={showNotifications}
+                aria-label="Notifications"
               >
                 <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-background"></span>
-                <span className="sr-only">Notifications</span>
+                <span className="absolute top-1.5 right-1.5 block h-2 w-2 rounded-full bg-rose-500 ring-1 ring-background animate-pulse"></span>
               </Button>
 
-              {/* 2. Settings Icon + Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  {/* This button has a single Avatar child, usually OK */}
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Settings className="h-5 w-5" />
-                    <span className="sr-only">User Menu</span>
+                  <Button
+                    variant="ghost"
+                    className="relative h-9 w-auto px-2 sm:px-3 flex items-center gap-2 rounded-full"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={userAvatarUrl} alt={displayName} />
+                      <AvatarFallback>{displayInitials}</AvatarFallback>
+                    </Avatar>
+                    <div className="hidden lg:flex flex-col items-start -space-y-1">
+                      <span className="text-xs font-medium">{displayName}</span>
+                      <span className="text-xs text-muted-foreground capitalize">
+                        {displayRole}
+                      </span>
+                    </div>
+                    <ChevronDown className="ml-1 h-4 w-4 text-muted-foreground hidden lg:block" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
-                  {/* 3a. User Name and Role Label */}
-                  <DropdownMenuLabel className="font-normal">
+                  <DropdownMenuLabel className="font-normal lg:hidden">
+                    {" "}
+                    {/* Show this only if name/role text above is hidden */}
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {userData.name || "User"}
+                        {displayName}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground capitalize">
-                        {userData.role || "Unknown Role"}
+                        {displayRole}
                       </p>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {/* 3b. Profile Item */}
+                  <DropdownMenuSeparator className="lg:hidden" />
                   <DropdownMenuItem
-                    onSelect={() =>
-                      navigate(
-                        role === "admin"
-                          ? "/dasboard/admin/profile"
-                          : role === "service"
-                          ? "/dasboard/service/profile"
-                          : "/dashboard/student/profile"
-                      )
-                    }
+                    onSelect={handleNavigateToProfile}
                     className="cursor-pointer"
                   >
-                    <UserCircle className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                    <UserCircle className="mr-2 h-4 w-4" /> Profile
                   </DropdownMenuItem>
+                  {/* <DropdownMenuItem
+                    onSelect={() => navigate("/dashboard/settings")}
+                    className="cursor-pointer"
+                  >
+                    <Settings className="mr-2 h-4 w-4" /> Settings
+                  </DropdownMenuItem> */}
                   <DropdownMenuSeparator />
-                  {/* 3c. Logout Item */}
                   <DropdownMenuItem
                     onSelect={handleLogout}
-                    className="cursor-pointer text-red-600 focus:text-red-600"
+                    className="cursor-pointer text-destructive focus:text-destructive"
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
+                    <LogOut className="mr-2 h-4 w-4" /> Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              {/* 4. User Avatar */}
-              <Avatar className="h-9 w-9">
-                <AvatarImage
-                  src={userData?.photo || userData?.profileImageUrl || ""}
-                  alt={userData?.name || "User"}
-                />
-                <AvatarFallback>{getInitials(userData?.name)}</AvatarFallback>
-              </Avatar>
-
-              {/* 5. User Name and Role Text (Desktop only) */}
-              <div className="hidden lg:flex flex-col items-start gap-2 -space-y-1 ml-0">
-                <p className="text-sm font-medium leading-none">
-                  {userData.name || "User"}
-                </p>
-                <p className="text-xs leading-none text-muted-foreground capitalize">
-                  {userData.role || "Role"}
-                </p>
-              </div>
             </>
           ) : (
-            // Fallback Login Button
+            // This case should ideally not be reached if ProtectedRoutes works correctly,
+            // but as a fallback or if user somehow gets to a dashboard page without contextUser
             <Button variant="outline" size="sm" asChild>
               <Link to="/login">Login</Link>
             </Button>
           )}
         </div>
-        {/* ========================== */}
       </div>
-      {/* <Toaster /> Ensure Toaster is present */}
     </header>
   );
 }

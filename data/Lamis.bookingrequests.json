@@ -1,0 +1,60 @@
+[{
+  "_id": {
+    "$oid": "682a732cf9ef8d2077e6ba58"
+  },
+  "studentId": {
+    "$oid": "682a6db7f9ef8d2077e6b96c"
+  },
+  "residencyId": {
+    "$oid": "682a72bdf9ef8d2077e6ba37"
+  },
+  "roomNumber": "6",
+  "matriculeBac": "33030029",
+  "anneeBac": "2020",
+  "sex": "male",
+  "dateNaissance": {
+    "$date": "2002-11-19T00:00:00.000Z"
+  },
+  "filiere": "informatique",
+  "anneeEtude": "L1",
+  "wilayaResidenceStudent": "jijel",
+  "notes": "Payment confirmed by service on 5/19/2025.",
+  "status": "paid",
+  "createdAt": {
+    "$date": "2025-05-18T23:54:20.154Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-18T23:55:23.493Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "682a8feef9ef8d2077e6bd50"
+  },
+  "studentId": {
+    "$oid": "682a8f97f9ef8d2077e6bd20"
+  },
+  "residencyId": {
+    "$oid": "682a72bdf9ef8d2077e6ba37"
+  },
+  "roomNumber": "3",
+  "matriculeBac": "33030028",
+  "anneeBac": "2020",
+  "sex": "male",
+  "dateNaissance": {
+    "$date": "1998-06-10T00:00:00.000Z"
+  },
+  "filiere": "informatique",
+  "anneeEtude": "L1",
+  "wilayaResidenceStudent": "jijel",
+  "notes": "walid tolba new resident",
+  "status": "pending",
+  "createdAt": {
+    "$date": "2025-05-19T01:57:02.141Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-19T01:57:02.141Z"
+  },
+  "__v": 0
+}]

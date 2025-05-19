@@ -1,0 +1,17 @@
+[{
+  "_id": {
+    "$oid": "682a8788f9ef8d2077e6bbdc"
+  },
+  "firstName": "a",
+  "lastName": "b",
+  "senderEmail": "test@gmail.com",
+  "content": "tesing admin contact",
+  "status": "unread",
+  "createdAt": {
+    "$date": "2025-05-19T01:21:12.839Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-19T01:21:12.839Z"
+  },
+  "__v": 0
+}]

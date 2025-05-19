@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import DashboardShell from "@/components/layout/DashboardShell";
 import {
   Card,
@@ -11,66 +11,89 @@ import {
 import { Home, ClipboardList } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import axios from "axios";
 
 export default function HousingDashboard() {
+  const [userData, setUserData] = useState(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [userError, setUserError] = useState(null);
   // Placeholder: Fetch actual stats if needed (e.g., total residencies, pending booking requests)
+  const API_BASE_URL_FROM_ENV =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
+  // --- API Client Setup ---
+  const apiClient = axios.create({
+    baseURL: `${API_BASE_URL_FROM_ENV}/api`, // Assuming /api is part of the base for most calls
+  });
+  apiClient.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+  useEffect(() => {
+    const fetchUserData = async () => {
+      setIsLoadingUser(true);
+      setUserError(null);
+      try {
+        const userResponse = await apiClient.get("/auth/me"); // Endpoint relative to apiClient baseURL
+
+        if (
+          userResponse.data &&
+          userResponse.data.success &&
+          userResponse.data.user
+        ) {
+          setUserData(userResponse.data.user);
+        } else {
+          // This case might indicate success:false or missing user object
+          throw new Error(
+            userResponse.data.message || "User data not found in response."
+          );
+        }
+      } catch (err) {
+        console.error("Failed to fetch user data:", err);
+        setUserError(err.message || "Could not load user information.");
+        // Optionally, set a default user or handle logout
+        setUserData({ name: "User" }); // Fallback name
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   const stats = {
     totalResidencies: 12, // Mock
     pendingBookings: 5, // Mock
   };
-
+  const userName = userData?.name || "Manager";
   return (
     <DashboardShell role="service">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">
-          Service Manager Dashboard
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">
+          {isLoadingUser ? (
+            <Skeleton className="h-9 w-64 inline-block" />
+          ) : (
+            `Welcome back, ${userName}!`
+          )}
         </h1>
         <p className="text-muted-foreground mt-1">
-          Overview of residencies and booking requests.
+          {isLoadingUser ? (
+            <Skeleton className="h-5 w-96 mt-1" />
+          ) : userError ? (
+            <span className="text-red-500">{userError}</span>
+          ) : (
+            "This is your Service Manager Dashboard. Here's an overview of your activities."
+          )}
         </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Residencies
-            </CardTitle>
-            <Home className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalResidencies}</div>
-            <p className="text-xs text-muted-foreground">
-              Managed university housing units
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button asChild variant="outline" size="sm" className="w-full">
-              <Link to="/service/residencies">Manage Residencies</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Booking Requests
-            </CardTitle>
-            <ClipboardList className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingBookings}</div>
-            <p className="text-xs text-muted-foreground">
-              Student applications awaiting review
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button asChild variant="outline" size="sm" className="w-full">
-              <Link to="/service/booking-requests">Review Requests</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-        {/* Add more relevant stats cards here */}
       </div>
 
       {/* Placeholder for recent activity or quick actions */}
@@ -79,14 +102,20 @@ export default function HousingDashboard() {
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-2 sm:grid-cols-2">
+          <CardContent className="grid gap-2 sm:grid-cols-3">
             <Button asChild className="w-full bg-rose-500 hover:bg-rose-600">
-              <Link to="/service/residencies">Add New Residency</Link>
+              <Link to="/dashboard/service/residencies">Add New Residency</Link>
             </Button>
             <Button asChild variant="secondary" className="w-full">
-              <Link to="/service/booking-requests">
+              <Link to="/dashboard/service/booking-requests">
                 View All Booking Requests
               </Link>
+            </Button>
+            <Button
+              asChild
+              className="w-full bg-transparent border-red-500 text-red-600 hover:bg-rose-300"
+            >
+              <Link to="/dashboard/service/messages">Upcoming Messages</Link>
             </Button>
           </CardContent>
         </Card>

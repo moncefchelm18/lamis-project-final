@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,9 +18,11 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import ReactPlayer from "react-player/youtube";
-
+import axios from "axios"; // Import axios
+import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { AuthContext } from "@/context/AuthContext";
 import logo from "@/assets/logos/logo.png";
-import imageHome from "@/assets/img3d.png"; // Adjust the path as necessary
+import imageHome from "@/assets/img3d.png";
 import user1 from "@/assets/users/user1.png";
 import user2 from "@/assets/users/user2.jpg";
 import user3 from "@/assets/users/user3.jpg";
@@ -33,10 +35,28 @@ import univ2Logo from "@/assets/universities/univ2.png";
 import univ3Logo from "@/assets/universities/univ3.png";
 import univ5Logo from "@/assets/universities/univ5.png";
 
+// Define your API base URL - adjust if necessary
+const API_BASE_URL = "http://localhost:5000/api"; // Or your production URL
+
 function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+
+  const { toast } = useToast(); // Initialize toast
+
+  // State for the contact form
+  const [contactFormData, setContactFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    message: "",
+  });
+  const [isSendingContact, setIsSendingContact] = useState(false);
+  // You can use toast for success/error, so dedicated state might not be needed
+  // const [contactSendError, setContactSendError] = useState(null);
+  // const [contactSendSuccess, setContactSendSuccess] = useState(false);
+  const { isAuthenticated, user } = useContext(AuthContext);
 
   const userAvatars = [user1, user2, user3, user4];
   const universityLogos = [
@@ -46,54 +66,35 @@ function LandingPage() {
     { src: univ2Logo, alt: "Logo of University 4" },
     { src: univ3Logo, alt: "Logo of University 5" },
   ];
-  const videoUrl = "https://www.youtube.com/watch?v=95utSBBwE24"; // Extracted from your video link
-  // Using a standard YouTube thumbnail URL structure
+  const videoUrl = "https://www.youtube.com/watch?v=95utSBBwE24";
   const videoThumbnailUrl =
     "https://img.youtube.com/vi/95utSBBwE24/hqdefault.jpg";
 
-  // Handle scroll for navbar effects
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Auto rotate testimonials
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, []); // Added testimonials.length dependency if testimonials array can change
 
-  // Animation variants
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6 },
-    },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
   const staggerChildren = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-      },
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.2 } },
   };
 
-  // Testimonial data
   const testimonials = [
     {
       quote:
@@ -115,6 +116,84 @@ function LandingPage() {
     },
   ];
 
+  // Handler for contact form input changes
+  const handleContactFormChange = (e) => {
+    const { id, value } = e.target;
+    setContactFormData((prevData) => ({
+      ...prevData,
+      [id]: value,
+    }));
+  };
+
+  // Handler for contact form submission
+  const handleContactFormSubmit = async (e) => {
+    e.preventDefault();
+    setIsSendingContact(true);
+
+    if (
+      !contactFormData.firstName ||
+      !contactFormData.email ||
+      !contactFormData.message
+    ) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in your first name, email, and message.",
+        variant: "destructive",
+      });
+      setIsSendingContact(false);
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/messages/contact-admins`,
+        {
+          firstName: contactFormData.firstName,
+          lastName: contactFormData.lastName,
+          senderEmail: contactFormData.email, // Ensure this matches backend expectation
+          content: contactFormData.message, // Ensure this matches backend expectation
+        }
+      );
+
+      if (response.data && response.data.success) {
+        toast({
+          title: "Message Sent!",
+          description:
+            "Thank you for contacting us. We'll get back to you shortly.",
+          variant: "success", // Or use a specific success style
+        });
+        setContactFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          message: "",
+        }); // Reset form
+      } else {
+        throw new Error(
+          response.data.message || "Failed to send message. Please try again."
+        );
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "An unexpected error occurred.";
+      toast({
+        title: "Error Sending Message",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingContact(false);
+    }
+  };
+  const getDashboardPath = () => {
+    if (!user) return "/login"; // Should not happen if isAuthenticated is true
+    if (user.role === "student") return "/dashboard/student";
+    if (user.role === "admin") return "/dashboard/admin";
+    if (user.role === "service") return "/dashboard/service";
+    return "/dashboard"; // Fallback
+  };
   return (
     <div className="flex min-h-screen flex-col">
       <header
@@ -122,6 +201,7 @@ function LandingPage() {
           isScrolled ? "bg-white/90 shadow-md" : "bg-transparent"
         }`}
       >
+        {/* ... Navbar remains the same ... */}
         <div className="container px-8 flex h-20 items-center justify-between">
           <motion.div
             initial={{ opacity: 0 }}
@@ -129,11 +209,6 @@ function LandingPage() {
             transition={{ duration: 0.5 }}
             className="flex items-center gap-2"
           >
-            {/* <Building className="h-8 w-8 text-rose-500" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-rose-500 to-rose-700 bg-clip-text text-transparent">
-              UniRoom
-            </span> */}
-
             <img src={logo} alt="UniRoom Logo" className="h-8" />
           </motion.div>
 
@@ -149,7 +224,7 @@ function LandingPage() {
                 >
                   <Link
                     to={item === "Home" ? "/" : `#${item.toLowerCase()}`}
-                    className="text-sm font-medium relative group"
+                    className="text-sm font-medium relative group text-slate-700 hover:text-rose-600"
                   >
                     {item}
                     <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-rose-500 transition-all duration-300 group-hover:w-full"></span>
@@ -182,12 +257,21 @@ function LandingPage() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="hidden md:block"
           >
-            <Button
-              asChild
-              className="bg-rose-500 hover:bg-rose-600 shadow-lg hover:shadow-xl transition-all duration-300 px-6"
-            >
-              <Link to="/login">Log In</Link>
-            </Button>
+            {isAuthenticated ? (
+              <Button
+                asChild
+                className="bg-green-500 hover:bg-green-600 shadow-lg hover:shadow-xl transition-all duration-300 px-6"
+              >
+                <Link to={getDashboardPath()}>Dashboard</Link>
+              </Button>
+            ) : (
+              <Button
+                asChild
+                className="bg-rose-500 hover:bg-rose-600 shadow-lg hover:shadow-xl transition-all duration-300 px-6"
+              >
+                <Link to="/login">Log In</Link>
+              </Button>
+            )}
           </motion.div>
         </div>
 
@@ -212,20 +296,40 @@ function LandingPage() {
                   </Link>
                 )
               )}
-              <Button
-                asChild
-                className="bg-rose-500 hover:bg-rose-600 w-full mt-2"
-              >
-                <Link to="/login">Log In</Link>
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  asChild
+                  className="bg-green-500 hover:bg-green-600 w-full mt-2"
+                >
+                  <Link
+                    to={getDashboardPath()}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  className="bg-rose-500 hover:bg-rose-600 w-full mt-2"
+                >
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                    Log In
+                  </Link>
+                </Button>
+              )}
             </div>
           </motion.div>
         )}
       </header>
 
       <main className="flex-1">
+        {/* ... Hero, Clients, Features, Benefits, Video, Testimonials, Statistics, FAQ, CTA Sections remain the same ... */}
         {/* Hero Section */}
-        <section className="relative w-full px-8 py-20 md:py-32 lg:py-40 overflow-hidden">
+        <section
+          id="home"
+          className="relative w-full px-8 py-20 md:py-32 lg:py-40 overflow-hidden"
+        >
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-gradient-to-br from-rose-50 to-white z-0 overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-full opacity-20">
@@ -273,12 +377,15 @@ function LandingPage() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="group transition-all duration-300"
+                    className="group transition-all duration-300 border-slate-300 hover:border-rose-500 hover:text-rose-600"
+                    onClick={() =>
+                      document
+                        .getElementById("features")
+                        ?.scrollIntoView({ behavior: "smooth" })
+                    }
                   >
                     <span>Learn More</span>
-                    <span className="ml-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                      →
-                    </span>
+                    <ArrowRight className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Button>
                 </div>
 
@@ -286,10 +393,10 @@ function LandingPage() {
                   <div className="flex flex-shrink-0 -space-x-2 overflow-hidden">
                     {userAvatars.map((avatarSrc, index) => (
                       <img
-                        key={index} // Using index is okay here as the list is static
+                        key={index}
                         src={avatarSrc}
                         alt={`User avatar ${index + 1}`}
-                        className="inline-block h-8 w-8 rounded-full ring-2 ring-white" // Added ring for overlap effect
+                        className="inline-block h-8 w-8 rounded-full ring-2 ring-white"
                       />
                     ))}
                   </div>
@@ -336,7 +443,6 @@ function LandingPage() {
                   </div>
                 </div>
 
-                {/* Floating badges */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
@@ -383,26 +489,23 @@ function LandingPage() {
         <section className="w-full px-8 py-12 bg-slate-50">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center">
-              <p className="text-sm font-medium text-slate-500">
-                TRUSTED BY UNIVERSITIES ACROSS THE COUNTRY
+              <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">
+                Trusted by Universities Across The Country
               </p>
-              <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-8 sm:gap-x-16 md:gap-x-20">
-                {" "}
-                {/* Increased gap */}
+              <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-8 sm:gap-x-16 md:gap-x-20 mt-4">
                 {universityLogos.map((logo, index) => (
                   <motion.div
-                    key={index} // Using index for key is okay for this static list
-                    initial={{ opacity: 0, y: 10 }} // Subtle lift animation
+                    key={index}
+                    initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1, duration: 0.5 }}
                     viewport={{ once: true, amount: 0.5 }}
                     className="flex items-center"
                   >
-                    {/* 4. Replace placeholder div with actual image */}
                     <img
                       src={logo.src}
-                      alt={logo.alt} // Use descriptive alt text
-                      className="h-16 sm:h-18 w-auto object-contain filter grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition-all duration-300" // Styled the image
+                      alt={logo.alt}
+                      className="h-16 sm:h-18 w-auto object-contain filter grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition-all duration-300"
                     />
                   </motion.div>
                 ))}
@@ -413,6 +516,7 @@ function LandingPage() {
 
         {/* Features Section */}
         <section id="features" className="w-full px-8 py-20 md:py-32">
+          {/* ... Features section content ... */}
           <div className="container px-4 md:px-6">
             <motion.div
               initial="hidden"
@@ -485,7 +589,7 @@ function LandingPage() {
                     <p className="text-slate-600">{feature.description}</p>
                     <div className="mt-4 pt-4 border-t border-slate-100">
                       <Link
-                        to="#"
+                        to="#" // Replace with actual link if available
                         className="inline-flex items-center text-rose-600 font-medium text-sm group"
                       >
                         Learn More
@@ -501,6 +605,7 @@ function LandingPage() {
 
         {/* Benefits Section */}
         <section className="w-full px-8 py-20 md:py-32 bg-gradient-to-b from-slate-50 to-white">
+          {/* ... Benefits section content ... */}
           <div className="container px-4 md:px-6">
             <motion.div
               initial="hidden"
@@ -571,6 +676,7 @@ function LandingPage() {
 
         {/* Video Showcase Section */}
         <section className="w-full px-8 py-20 md:py-32 bg-slate-100">
+          {/* ... Video Showcase section content ... */}
           <div className="container px-4 md:px-6">
             <motion.div
               initial="hidden"
@@ -590,52 +696,22 @@ function LandingPage() {
                 university housing process.
               </p>
             </motion.div>
-
-            {/* <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
-              viewport={{ once: true }}
-              className="relative mx-auto max-w-4xl rounded-2xl overflow-hidden shadow-2xl"
-            >
-              <div className="aspect-video bg-slate-800 relative">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <img
-                    src="/placeholder/800/450"
-                    alt="Video thumbnail"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      className="h-20 w-20 rounded-full bg-rose-500 flex items-center justify-center cursor-pointer shadow-xl"
-                    >
-                      <div className="h-16 w-16 rounded-full bg-white flex items-center justify-center">
-                        <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-rose-500 border-b-8 border-b-transparent ml-1"></div>
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
-              </div>
-            </motion.div> */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }} // Slightly different initial animation
+              initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.7 }}
               viewport={{ once: true, amount: 0.2 }}
-              className="relative mx-auto max-w-4xl rounded-xl md:rounded-2xl overflow-hidden shadow-xl md:shadow-2xl border border-slate-200" // Adjusted styling slightly
+              className="relative mx-auto max-w-4xl rounded-xl md:rounded-2xl overflow-hidden shadow-xl md:shadow-2xl border border-slate-200"
             >
-              {/* Aspect ratio container ensures correct video dimensions */}
               <div className="aspect-video bg-slate-900">
                 <ReactPlayer
                   url={videoUrl}
-                  light={videoThumbnailUrl} // Show thumbnail specified, clicking plays video
-                  playing // Optional: set to true if you want it to try autoplaying after click (might be blocked by browser)
-                  controls // Show YouTube controls after play starts
+                  light={videoThumbnailUrl}
+                  playing={false} // Set to false initially
+                  controls
                   width="100%"
                   height="100%"
-                  className="absolute top-0 left-0" // Ensure player fills the aspect ratio div
-                  // Optional config for YouTube player appearance
+                  className="absolute top-0 left-0"
                   config={{
                     youtube: {
                       playerVars: { showinfo: 0, modestbranding: 1, rel: 0 },
@@ -652,6 +728,7 @@ function LandingPage() {
           id="testimonials"
           className="w-full px-8 py-20 md:py-32 bg-slate-900 text-white"
         >
+          {/* ... Testimonials section content ... */}
           <div className="container px-4 md:px-6">
             <motion.div
               initial="hidden"
@@ -672,7 +749,6 @@ function LandingPage() {
               </p>
             </motion.div>
 
-            {/* Desktop Testimonials */}
             <div className="hidden md:grid gap-8 md:grid-cols-3">
               {testimonials.map((testimonial, i) => (
                 <motion.div
@@ -711,7 +787,6 @@ function LandingPage() {
               ))}
             </div>
 
-            {/* Mobile Testimonial Carousel */}
             <div className="md:hidden relative">
               <div className="overflow-hidden">
                 <div
@@ -773,6 +848,7 @@ function LandingPage() {
 
         {/* Statistics Section */}
         <section className="w-full px-8 py-20 md:py-32">
+          {/* ... Statistics section content ... */}
           <div className="container px-4 md:px-6">
             <div className="grid gap-12 md:grid-cols-4">
               {[
@@ -800,7 +876,10 @@ function LandingPage() {
         </section>
 
         {/* FAQ Section */}
-        <section className="w-full px-8 py-20 md:py-32 bg-slate-50">
+        <section id="about" className="w-full px-8 py-20 md:py-32 bg-slate-50">
+          {" "}
+          {/* Changed ID for About link */}
+          {/* ... FAQ section content ... */}
           <div className="container px-4 md:px-6">
             <motion.div
               initial="hidden"
@@ -880,6 +959,7 @@ function LandingPage() {
 
         {/* CTA Section */}
         <section className="w-full px-8 py-20 md:py-32 bg-rose-500">
+          {/* ... CTA section content ... */}
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 items-center">
               <motion.div
@@ -908,6 +988,11 @@ function LandingPage() {
                 <Button
                   size="lg"
                   className="bg-white text-rose-600 hover:bg-rose-50 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  onClick={() =>
+                    document
+                      .getElementById("contact")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
                 >
                   Schedule a Demo
                 </Button>
@@ -915,6 +1000,11 @@ function LandingPage() {
                   variant="outline"
                   size="lg"
                   className="border-white text-white bg-transparent hover:bg-white/10 transition-all duration-300"
+                  onClick={() =>
+                    document
+                      .getElementById("features")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
                 >
                   Learn More
                 </Button>
@@ -945,15 +1035,15 @@ function LandingPage() {
               </p>
             </motion.div>
 
-            <div className="flex flex-col gap-10 items-center">
+            <div className="flex flex-col gap-10 items-center lg:flex-row lg:justify-around lg:items-start">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7 }}
                 viewport={{ once: true }}
-                className="space-y-6"
+                className="space-y-6 text-center lg:text-left lg:max-w-md"
               >
-                <div className="flex gap-6">
+                <div className="flex flex-col sm:flex-row lg:flex-col gap-6 items-center sm:items-start">
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100">
                       <Mail className="h-6 w-6 text-rose-600" />
@@ -986,14 +1076,6 @@ function LandingPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* <div className="mt-8">
-                  <img
-                    src={contactUsImage}
-                    alt="Contact illustration"
-                    className="rounded-xl  h-auto max-h-56 shadow-md"
-                  />
-                </div> */}
               </motion.div>
 
               <motion.div
@@ -1001,37 +1083,46 @@ function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.2 }}
                 viewport={{ once: true }}
-                className="relative"
+                className="relative w-full max-w-lg"
               >
                 <div className="absolute inset-0 -z-10 bg-gradient-to-tr from-rose-100 to-indigo-100 rounded-3xl blur-xl opacity-70"></div>
                 <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
                   <h3 className="text-2xl font-bold mb-6">Send Us a Message</h3>
-                  <form className="space-y-4">
+                  {/* UPDATED FORM HERE */}
+                  <form
+                    className="space-y-4"
+                    onSubmit={handleContactFormSubmit}
+                  >
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <label
-                          htmlFor="first-name"
+                          htmlFor="firstName" // Changed from "first-name"
                           className="text-sm font-medium"
                         >
                           First name
                         </label>
                         <input
-                          id="first-name"
+                          id="firstName" // Changed from "first-name"
                           className="w-full rounded-md border border-slate-300 p-3 text-sm placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
                           placeholder="Enter your first name"
+                          value={contactFormData.firstName}
+                          onChange={handleContactFormChange}
+                          required
                         />
                       </div>
                       <div className="space-y-2">
                         <label
-                          htmlFor="last-name"
+                          htmlFor="lastName" // Changed from "last-name"
                           className="text-sm font-medium"
                         >
                           Last name
                         </label>
                         <input
-                          id="last-name"
+                          id="lastName" // Changed from "last-name"
                           className="w-full rounded-md border border-slate-300 p-3 text-sm placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
                           placeholder="Enter your last name"
+                          value={contactFormData.lastName}
+                          onChange={handleContactFormChange}
                         />
                       </div>
                     </div>
@@ -1044,6 +1135,9 @@ function LandingPage() {
                         type="email"
                         className="w-full rounded-md border border-slate-300 p-3 text-sm placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
                         placeholder="Enter your email"
+                        value={contactFormData.email}
+                        onChange={handleContactFormChange}
+                        required
                       />
                     </div>
                     <div className="space-y-2">
@@ -1055,10 +1149,17 @@ function LandingPage() {
                         className="w-full rounded-md border border-slate-300 p-3 text-sm placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
                         placeholder="Enter your message"
                         rows={5}
+                        value={contactFormData.message}
+                        onChange={handleContactFormChange}
+                        required
                       />
                     </div>
-                    <Button className="w-full bg-rose-500 hover:bg-rose-600">
-                      Send Message
+                    <Button
+                      type="submit" // Ensure type is submit
+                      className="w-full bg-rose-500 hover:bg-rose-600"
+                      disabled={isSendingContact} // Disable button while sending
+                    >
+                      {isSendingContact ? "Sending..." : "Send Message"}
                     </Button>
                   </form>
                 </div>
@@ -1069,13 +1170,12 @@ function LandingPage() {
       </main>
 
       <footer className="w-full px-8 py-16 bg-slate-900 text-white">
+        {/* ... Footer remains the same ... */}
         <div className="container px-4 md:px-6">
           <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                {/* <Building className="h-7 w-7 text-rose-400" />
-                <span className="text-xl font-bold">UniRoom</span> */}
-                <img src={logo} alt="UniRoom Logo" className="h-8 w-8" />
+                <img src={logo} alt="UniRoom Logo" className="h-8" />
               </div>
               <p className="text-slate-400">
                 Transforming university housing management with innovative
@@ -1088,9 +1188,12 @@ function LandingPage() {
                       key={social}
                       href="#"
                       className="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-rose-500 transition-colors duration-300"
+                      aria-label={social}
                     >
-                      <span className="sr-only">{social}</span>
-                      <div className="h-5 w-5 bg-slate-400 rounded-sm"></div>
+                      {/* Placeholder for actual icons */}
+                      <div
+                        className={`i-${social} h-5 w-5 text-slate-400 group-hover:text-white`}
+                      ></div>
                     </a>
                   )
                 )}
@@ -1104,8 +1207,16 @@ function LandingPage() {
                   (item) => (
                     <li key={item}>
                       <Link
-                        to="#"
+                        to={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
                         className="text-slate-400 hover:text-white transition-colors duration-300"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          document
+                            .getElementById(
+                              item.toLowerCase().replace(/\s+/g, "-")
+                            )
+                            ?.scrollIntoView({ behavior: "smooth" });
+                        }}
                       >
                         {item}
                       </Link>
@@ -1122,8 +1233,16 @@ function LandingPage() {
                   (item) => (
                     <li key={item}>
                       <Link
-                        to="#"
+                        to={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
                         className="text-slate-400 hover:text-white transition-colors duration-300"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          document
+                            .getElementById(
+                              item.toLowerCase().replace(/\s+/g, "-")
+                            )
+                            ?.scrollIntoView({ behavior: "smooth" });
+                        }}
                       >
                         {item}
                       </Link>
@@ -1141,10 +1260,14 @@ function LandingPage() {
               <form className="flex max-w-md">
                 <input
                   type="email"
-                  className="w-full rounded-l-md border-0 bg-slate-800 px-3 py-2 text-white placeholder:text-slate-500"
+                  className="w-full rounded-l-md border-0 bg-slate-800 px-3 py-2 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-rose-500"
                   placeholder="Enter your email"
+                  aria-label="Email for newsletter"
                 />
-                <Button className="rounded-l-none bg-rose-500 hover:bg-rose-600">
+                <Button
+                  type="submit"
+                  className="rounded-l-none bg-rose-500 hover:bg-rose-600"
+                >
                   Subscribe
                 </Button>
               </form>

@@ -8,12 +8,7 @@ import "./index.css";
  * @returns {React.ReactElement} The App component
  */
 function App() {
-  return (
-    <Router>
-      <AppRoutes />
-      <Toaster />
-    </Router>
-  );
+  return <AppRoutes />;
 }
 
 export default App;

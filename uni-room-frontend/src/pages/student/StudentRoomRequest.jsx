@@ -132,6 +132,7 @@ export default function StudentRoomRequest() {
       );
       if (response.data.success) {
         setCurrentRequest(response.data.data);
+        console.log("Current Request:", response.data.data);
       } else {
         throw new Error(
           response.data.message || "Failed to fetch request status."

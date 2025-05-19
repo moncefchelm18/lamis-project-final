@@ -1,0 +1,138 @@
+[{
+  "_id": {
+    "$oid": "6829149daf1851051aab79e9"
+  },
+  "name": "admin admin",
+  "email": "admin@gmail.com",
+  "password": "$2a$10$TQSEVVeXQvZdgFDY8b/X3Or9XsQTjyUjKt5K1giACo1hs3rdAyLLO",
+  "role": "admin",
+  "studentId": null,
+  "createdAt": {
+    "$date": "2025-05-17T22:58:37.765Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-17T22:58:37.765Z"
+  },
+  "__v": 0,
+  "status": "approved"
+},
+{
+  "_id": {
+    "$oid": "682a6db7f9ef8d2077e6b96c"
+  },
+  "name": "Chelgham Mounsif",
+  "email": "moncef@gmail.com",
+  "password": "$2a$10$JvqD5QXhIWp.nTMbMLQjUekeH.iRzY4GGh/2QOG/KuqYidrWBKIBa",
+  "role": "student",
+  "studentId": "12345678",
+  "status": "approved",
+  "verifiedBy": {
+    "$oid": "6829149daf1851051aab79e9"
+  },
+  "createdAt": {
+    "$date": "2025-05-18T23:31:03.020Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-18T23:40:24.420Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "682a70aaf9ef8d2077e6b9c5"
+  },
+  "name": "Wassim Oubaziz",
+  "email": "wassim@gmail.com",
+  "password": "$2a$10$ifXAogjygLdDGuCi8ju3ruwkfwx4is2HiIl8i1rKs4xjt9niblFXq",
+  "role": "service",
+  "status": "approved",
+  "verifiedBy": {
+    "$oid": "6829149daf1851051aab79e9"
+  },
+  "createdAt": {
+    "$date": "2025-05-18T23:43:38.793Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-18T23:44:00.183Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "682a71eff9ef8d2077e6b9f7"
+  },
+  "name": "Wassim Oubaziz 2",
+  "email": "wassim2@gmail.com",
+  "password": "$2a$10$2I.0Dtk2HKBIDT8aN7Ej1O9ifl4hGs65Es1Wb55O.jAv0y7zRN.Fq",
+  "role": "service",
+  "status": "approved",
+  "verifiedBy": {
+    "$oid": "6829149daf1851051aab79e9"
+  },
+  "createdAt": {
+    "$date": "2025-05-18T23:49:03.047Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-18T23:49:17.529Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "682a7226f9ef8d2077e6ba04"
+  },
+  "name": "Wassim Oubazizzz",
+  "email": "wassim3@gmail.com",
+  "password": "$2a$10$VSP1smODHkg4yQ2nFqomQOpgvGtghvx02aGc8uLZqsa9zjM/oYYNS",
+  "role": "service",
+  "status": "approved",
+  "verifiedBy": {
+    "$oid": "6829149daf1851051aab79e9"
+  },
+  "createdAt": {
+    "$date": "2025-05-18T23:49:58.530Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-18T23:50:14.571Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "682a8d34f9ef8d2077e6bc84"
+  },
+  "name": "wail benoulha",
+  "email": "admin2@gmail.com",
+  "password": "$2a$10$NP5TXKINaEdZ0gYk/dr4yeDRBIiHy/5lXn31LObHi4TXi8s7HtQR2",
+  "role": "admin",
+  "status": "pending",
+  "verifiedBy": null,
+  "createdAt": {
+    "$date": "2025-05-19T01:45:24.559Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-19T01:45:24.559Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "682a8f97f9ef8d2077e6bd20"
+  },
+  "name": "Walid Tolba",
+  "email": "walid@gmail.com",
+  "password": "$2a$10$oCWQMDJ6GA1UtuB8RoJ3HeoW.x2gB.mw0dCqWtQBBj1ifbBuCG2OO",
+  "role": "student",
+  "studentId": "12345677",
+  "status": "approved",
+  "verifiedBy": {
+    "$oid": "6829149daf1851051aab79e9"
+  },
+  "createdAt": {
+    "$date": "2025-05-19T01:55:35.584Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-19T01:55:56.247Z"
+  },
+  "__v": 0
+}]

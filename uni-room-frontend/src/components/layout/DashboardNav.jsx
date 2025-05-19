@@ -13,6 +13,7 @@ import {
   Bed,
   ClipboardList,
   Building2,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,11 @@ function DashboardNav({ role }) {
       href: "/dashboard/admin/user-approvals",
       icon: UserCheck,
     },
+    {
+      title: "Residency Messages",
+      href: `/dashboard/admin/messages`,
+      icon: Mail,
+    },
     // {
     //   title: "Students",
     //   href: "/dashboard/admin/students",
@@ -88,7 +94,11 @@ function DashboardNav({ role }) {
       href: "/dashboard/service/booking-requests",
       icon: ClipboardList,
     },
-
+    {
+      title: "Residency Messages",
+      href: `/dashboard/service/messages`,
+      icon: Mail,
+    },
     // {
     //   title: "Room Requests",
     //   href: "/dashboard/service/requests",

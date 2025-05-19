@@ -8,7 +8,8 @@ import { useToast } from "@/hooks/use-toast"; // Ensure path is correct
 import { Badge } from "@/components/ui/badge"; // To show status
 
 // --- Configuration ---
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = "http://localhost:5000";
 const MAX_ACTIVITIES = 5; // Number of recent items to show
 
 // Helper function to create Axios config with Auth header

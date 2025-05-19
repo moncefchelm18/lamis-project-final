@@ -21,6 +21,8 @@ import StudentRoomRequest from "@/pages/student/StudentRoomRequest";
 import AdminUserApprovals from "@/pages/admin/AdminUserApprovals";
 import ServiceManageResidency from "@/pages/service/ServiceManageResidency";
 import ServiceBookingRequests from "@/pages/service/ServiceBookingRequests";
+import ServiceMessages from "@/pages/service/ServiceMessages";
+import AdminMessages from "@/pages/admin/AdminMessages";
 
 /**
  * Application routes configuration
@@ -50,12 +52,13 @@ function AppRoutes() {
         {/* Admin Routes */}
         <Route path="admin" element={<AdminDashboard />} />
         <Route path="admin/user-approvals" element={<AdminUserApprovals />} />
-        <Route path="admin/students" element={<AdminStudents />} />
-        <Route path="admin/requests" element={<AdminContactMessages />} />
-        <Route
+        <Route path="admin/messages" element={<AdminMessages />} />
+        {/* <Route path="admin/students" element={<AdminStudents />} /> */}
+        {/* <Route path="admin/requests" element={<AdminContactMessages />} /> */}
+        {/* <Route
           path="admin/site-maintenance"
           element={<AdminSiteMaintenance />}
-        />
+        /> */}
 
         {/* Housing Manager Routes */}
         <Route path="service" element={<HousingDashboard />} />
@@ -67,6 +70,7 @@ function AppRoutes() {
           path="service/booking-requests"
           element={<ServiceBookingRequests />}
         />
+        <Route path="service/messages" element={<ServiceMessages />} />
         {/* <Route path="service/requests" element={<HousingRequests />} /> */}
         {/* <Route path="service/students" element={<HousingStudents />} /> */}
 

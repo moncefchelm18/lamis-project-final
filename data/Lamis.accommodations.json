@@ -1,0 +1,103 @@
+[{
+  "_id": {
+    "$oid": "682a7148f9ef8d2077e6b9de"
+  },
+  "title": "Ali Mendjli 4",
+  "wilaya": "Constantine",
+  "type": "Room",
+  "description": "signle handled only",
+  "totalRoomCount": 300,
+  "amenities": [
+    "WiFi",
+    "Heating",
+    "Private Bathroom",
+    "Study Desk",
+    "Security",
+    "Parking"
+  ],
+  "images": [
+    "https://lapatrienews.dz/wp-content/uploads/2022/07/86060-residence-universitaire-ali-mendjeli-constantine.jpg",
+    "https://www.univ-oeb.dz/vrlex/wp-content/uploads/2023/06/received_1365584604224672-1024x768.jpeg",
+    "https://www.univ-oeb.dz/vrlex/wp-content/uploads/2023/06/received_5470100696423619-1024x768.jpeg",
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAOirL8qEu52KdFcOs3Nm2sLXxnILGzBCIphZQEi_OrAswI-pZhj6MVB6Ko12ot5u4Veg&usqp=CAU",
+    "https://www.univ-oeb.dz/vrlex/wp-content/uploads/2023/06/27-1024x766.jpeg"
+  ],
+  "userId": {
+    "$oid": "682a70aaf9ef8d2077e6b9c5"
+  },
+  "status": "approved",
+  "createdAt": {
+    "$date": "2025-05-18T23:46:16.604Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-18T23:46:16.604Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "682a728df9ef8d2077e6ba2d"
+  },
+  "title": "Ali Mendjli 2",
+  "wilaya": "Constantine",
+  "type": "Room",
+  "description": "single handeled 2",
+  "totalRoomCount": 150,
+  "amenities": [
+    "WiFi",
+    "Kitchen",
+    "Laundry",
+    "Air Conditioning",
+    "Heating",
+    "Private Bathroom"
+  ],
+  "images": [
+    "https://www.algerie360.com/wp-content/uploads/2017/01/d-262115debrayage-a-la-cite-universitaire-de-jeunes-filles-revoil-du-ruisseau-87ee0-1.jpg"
+  ],
+  "userId": {
+    "$oid": "682a71eff9ef8d2077e6b9f7"
+  },
+  "status": "approved",
+  "createdAt": {
+    "$date": "2025-05-18T23:51:41.844Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-18T23:51:41.844Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "682a72bdf9ef8d2077e6ba37"
+  },
+  "title": "Ali Mendjli 3",
+  "wilaya": "Constantine",
+  "type": "Room",
+  "description": "single handled 3",
+  "totalRoomCount": 200,
+  "amenities": [
+    "WiFi",
+    "Air Conditioning",
+    "Study Desk",
+    "Parking",
+    "Hot Water"
+  ],
+  "images": [
+    "https://www.enp.edu.dz/storage/2023/07/bouraoui-1.jpeg",
+    "https://lalgerieaujourdhui.dz/wp-content/uploads/2022/02/Residence-U.jpg",
+    "https://www.algerie360.com/wp-content/uploads/2022/08/crise-du-logement.jpg",
+    "https://www.studylease.com/files/thumbs/residences/residences/images/residence-preview/j6jnmtem.jpeg",
+    "https://lechodalgerie.dz/wp-content/uploads/2022/05/p-8-1-14-1.jpg"
+  ],
+  "userId": {
+    "$oid": "682a7226f9ef8d2077e6ba04"
+  },
+  "status": "approved",
+  "createdAt": {
+    "$date": "2025-05-18T23:52:29.585Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-19T00:48:19.327Z"
+  },
+  "__v": 0
+}]

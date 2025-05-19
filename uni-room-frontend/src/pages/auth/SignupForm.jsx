@@ -1,8 +1,18 @@
-"use client";
+// SignupForm.jsx
+"use client"; // Keep if needed
 
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useContext } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,37 +24,44 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { motion, AnimatePresence } from "framer-motion";
-import {
   Building,
   ArrowRight,
   Eye,
   EyeOff,
   Loader2,
-  User,
-  Mail,
-  Key,
-  IdCard,
+  User as UserIcon, // Aliased
+  Mail as MailIcon, // Aliased
+  Key as KeyIcon, // Aliased
+  IdCard as IdCardIcon, // Aliased
+  Clock as ClockIcon, // Aliased
+  CheckCircle as CheckCircleIcon, // Aliased
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { Tilt } from "react-tilt";
 import { useSpring, animated } from "react-spring";
-import logoSmall from "@/assets/logos/logo.png";
+import logoSmall from "@/assets/logos/logo.png"; // Ensure path is correct
+import { AuthContext } from "@/context/AuthContext"; // Adjust path if necessary
 
-// --- Configuration ---
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 function SignupForm() {
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
+  const authContext = useContext(AuthContext);
+
+  if (!authContext) {
+    console.error(
+      "AuthContext is not available. Make sure SignupForm is wrapped in AuthProvider."
+    );
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Critical Error: Auth Provider Missing.
+      </div>
+    );
+  }
+  const { login, isAuthenticated, isLoadingAuth, user } = authContext;
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -54,26 +71,32 @@ function SignupForm() {
     role: "",
     studentId: "",
   });
-
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
-  const [bgPosition, setBgPosition] = useState({ x: 0, y: 0 });
+  const [signupSuccessDisplay, setSignupSuccessDisplay] = useState(false); // For UI transition
+  const [signupMessage, setSignupMessage] = useState(""); // For pending/success message
+  const [bgPosition, setBgPosition] = useState({ x: 0.5, y: 0.5 });
 
-  // Animated background
   useEffect(() => {
-    const handleMouseMove = (e) => {
+    if (!isLoadingAuth && isAuthenticated) {
+      const from =
+        location.state?.from?.pathname ||
+        (user?.role ? `/dashboard/${user.role}` : "/dashboard");
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, isLoadingAuth, navigate, user, location.state]);
+
+  useEffect(() => {
+    const handleMouseMove = (e) =>
       setBgPosition({
         x: e.clientX / window.innerWidth,
         y: e.clientY / window.innerHeight,
       });
-    };
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  // Logo animation
   const logoProps = useSpring({
     from: { transform: "scale(0.8)", opacity: 0 },
     to: { transform: "scale(1)", opacity: 1 },
@@ -81,15 +104,13 @@ function SignupForm() {
     delay: 300,
   });
 
-  // Success celebration effect
-  const triggerConfetti = () => {
+  const triggerConfetti = () =>
     confetti({
       particleCount: 100,
       spread: 70,
       origin: { y: 0.6 },
       colors: ["#f43f5e", "#ffffff", "#f97316"],
     });
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -97,150 +118,172 @@ function SignupForm() {
   };
 
   const handleRoleChange = (value) => {
-    setFormData((prev) => ({ ...prev, role: value, studentId: "" })); // Reset studentId if role changes
+    setFormData((prev) => ({ ...prev, role: value, studentId: "" }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
+    setSignupMessage("");
+    setSignupSuccessDisplay(false);
 
-    // --- Frontend Validation ---
     if (
       !formData.fullName ||
       !formData.email ||
       !formData.password ||
+      !formData.confirmPassword ||
       !formData.role
     ) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: "Missing Fields",
+        description: "Please fill in all required fields.",
         variant: "destructive",
       });
-      setIsLoading(false);
+      setIsSubmitting(false);
       return;
     }
-
     if (formData.password !== formData.confirmPassword) {
       toast({
-        title: "Error",
-        description: "Passwords do not match",
+        title: "Password Mismatch",
+        description: "Passwords do not match.",
         variant: "destructive",
       });
-      setIsLoading(false);
+      setIsSubmitting(false);
       return;
     }
-
+    if (formData.password.length < 6) {
+      toast({
+        title: "Weak Password",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
     if (formData.role === "student" && !formData.studentId) {
       toast({
-        title: "Error",
-        description: "Student ID is required for student accounts",
+        title: "Student ID Required",
+        description: "Student ID is required for student accounts.",
         variant: "destructive",
       });
-      setIsLoading(false);
+      setIsSubmitting(false);
       return;
     }
 
-    // --- Prepare Data for Backend ---
     const payload = {
       name: formData.fullName,
       email: formData.email,
       password: formData.password,
       role: formData.role,
-      studentId: formData.role === "student" ? formData.studentId : undefined,
+      ...(formData.role === "student" && { studentId: formData.studentId }),
     };
 
-    if (!payload.studentId) {
-      delete payload.studentId;
-    }
-
-    // --- API Call ---
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || `HTTP error! Status: ${response.status}`
-        );
+        let errorMessage =
+          data.message || `Registration failed with status: ${response.status}`;
+        if (data.errors && Array.isArray(data.errors))
+          errorMessage = data.errors.map((err) => err.msg).join(", ");
+        throw new Error(errorMessage);
       }
 
-      // --- Handle Success ---
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("token", data.token);
+      if (data.success && data.user) {
+        setSignupSuccessDisplay(true);
+        triggerConfetti();
 
-      setSignupSuccess(true);
-      triggerConfetti();
-
-      toast({
-        title: "Success",
-        description: "Account created successfully!",
-      });
-
-      // Redirect with delay for animation
-      setTimeout(() => {
-        const userRole = data.user?.role;
-        if (userRole === "student") {
-          navigate("/dashboard/student");
-        } else if (userRole === "admin") {
-          navigate("/dashboard/admin");
-        } else if (userRole === "service") {
-          navigate("/dashboard/service");
-        } else {
-          navigate("/dashboard");
+        if (data.user.status === "pending") {
+          setSignupMessage(
+            "Registration submitted! Your account is pending approval by an administrator. You will be notified via email once approved."
+          );
+          toast({
+            title: "Registration Submitted",
+            description: "Your account is pending approval.",
+            duration: 7000,
+          });
+        } else if (data.user.status === "approved") {
+          setSignupMessage(
+            "Account created and approved! Redirecting to your dashboard..."
+          );
+          if (data.token && data.user) {
+            login(data.user, data.token); // This will handle navigation
+          } else {
+            console.error(
+              "Approved user data or token missing from registration response."
+            );
+            toast({
+              title: "Registration Error",
+              description: "Could not finalize your approved account.",
+              variant: "destructive",
+            });
+          }
+          toast({
+            title: "Account Created!",
+            description: "Welcome to UniRoom!",
+          });
         }
-      }, 1500);
+      } else {
+        throw new Error(
+          data.message || "Registration failed. Please try again."
+        );
+      }
     } catch (error) {
       console.error("Signup failed:", error);
+      setSignupSuccessDisplay(false);
+      setSignupMessage("");
       toast({
         title: "Signup Failed",
-        description:
-          error.message || "An unexpected error occurred. Please try again.",
+        description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
+
+  if (isLoadingAuth) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-rose-50 text-rose-700">
+        <Loader2 className="h-10 w-10 animate-spin" />
+        <p className="ml-3 text-lg">Loading...</p>
+      </div>
+    );
+  }
+  if (isAuthenticated && !isLoadingAuth) {
+    return null; // Redirect handled by useEffect
+  }
 
   return (
     <div
       className="flex min-h-screen flex-col items-center justify-center p-4 overflow-hidden"
       style={{
-        background: `
-          radial-gradient(
-            circle at ${bgPosition.x * 100}% ${
+        background: `radial-gradient(circle at ${bgPosition.x * 100}% ${
           bgPosition.y * 100
-        }%, #fee2e2 0%, #fff1f2 30%, #fecdd3 100%
-          )`,
+        }%, #fee2e2 0%, #fff1f2 30%, #fecdd3 100%)`,
         backgroundSize: "200% 200%",
         transition: "background-position 0.3s ease-out",
       }}
     >
-      {/* Abstract shapes for visual interest */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-rose-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
         <div className="absolute top-10 right-20 w-96 h-96 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
         <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
-
-      {/* University campus illustration */}
       <div
         className="absolute bottom-0 left-0 w-full h-48 bg-contain bg-bottom bg-no-repeat pointer-events-none opacity-20"
         style={{ backgroundImage: "url('/images/campus-skyline.svg')" }}
       ></div>
 
-      {/* Top Left Logo Link */}
       <animated.div style={logoProps}>
         <Link
           to="/"
-          className="absolute left-8 top-8 flex items-center gap-2 text-foreground hover:scale-105 transition-transform"
+          className="absolute left-8 top-8 flex items-center gap-2 text-foreground hover:scale-105 transition-transform z-20"
         >
           <div className="p-2 bg-white bg-opacity-80 backdrop-blur-sm rounded-xl shadow-lg">
             <Building className="h-6 w-6 text-rose-500" />
@@ -251,9 +294,10 @@ function SignupForm() {
         </Link>
       </animated.div>
 
-      <AnimatePresence>
-        {!signupSuccess ? (
+      <AnimatePresence mode="wait">
+        {!signupSuccessDisplay ? (
           <motion.div
+            key="signup-form"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -282,20 +326,20 @@ function SignupForm() {
                     }}
                   >
                     <div className="p-3">
-                      <img src={logoSmall} alt="small-logo" className="h-8" />
+                      <img src={logoSmall} alt="UniRoom Logo" className="h-8" />
                     </div>
                   </motion.div>
                   <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-rose-600 to-rose-800">
-                    Create an account
+                    Create Your UniRoom Account
                   </CardTitle>
                   <CardDescription className="text-gray-600">
-                    Enter your information to join UniRoom
+                    Join our community. It's quick and easy!
                   </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
                   <CardContent className="space-y-4">
                     <motion.div
-                      className="space-y-2"
+                      className="space-y-1.5"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
@@ -314,17 +358,16 @@ function SignupForm() {
                           value={formData.fullName}
                           onChange={handleChange}
                           required
-                          disabled={isLoading}
-                          className="border-gray-300 focus:border-rose-400 focus:ring focus:ring-rose-200 transition-all bg-white/70 pl-10"
+                          disabled={isSubmitting}
+                          className="pl-10"
                         />
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <User className="h-4 w-4 text-gray-400" />
+                        <div className="input-icon">
+                          <UserIcon />
                         </div>
                       </div>
                     </motion.div>
-
                     <motion.div
-                      className="space-y-2"
+                      className="space-y-1.5"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 }}
@@ -333,7 +376,7 @@ function SignupForm() {
                         htmlFor="email"
                         className="text-gray-700 font-medium"
                       >
-                        Email
+                        Email Address
                       </Label>
                       <div className="relative">
                         <Input
@@ -344,17 +387,16 @@ function SignupForm() {
                           value={formData.email}
                           onChange={handleChange}
                           required
-                          disabled={isLoading}
-                          className="border-gray-300 focus:border-rose-400 focus:ring focus:ring-rose-200 transition-all bg-white/70 pl-10"
+                          disabled={isSubmitting}
+                          className="pl-10"
                         />
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Mail className="h-4 w-4 text-gray-400" />
+                        <div className="input-icon">
+                          <MailIcon />
                         </div>
                       </div>
                     </motion.div>
-
                     <motion.div
-                      className="space-y-2"
+                      className="space-y-1.5"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.4 }}
@@ -373,29 +415,24 @@ function SignupForm() {
                           value={formData.password}
                           onChange={handleChange}
                           required
-                          disabled={isLoading}
-                          className="border-gray-300 focus:border-rose-400 focus:ring focus:ring-rose-200 transition-all pr-10 bg-white/70 pl-10"
+                          disabled={isSubmitting}
+                          className="pl-10 pr-10"
                         />
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Key className="h-4 w-4 text-gray-400" />
+                        <div className="input-icon">
+                          <KeyIcon />
                         </div>
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                          tabIndex="-1"
+                          className="password-toggle-icon"
+                          tabIndex={-1}
                         >
-                          {showPassword ? (
-                            <EyeOff className="h-5 w-5" />
-                          ) : (
-                            <Eye className="h-5 w-5" />
-                          )}
+                          {showPassword ? <EyeOff /> : <Eye />}
                         </button>
                       </div>
                     </motion.div>
-
                     <motion.div
-                      className="space-y-2"
+                      className="space-y-1.5"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.5 }}
@@ -414,31 +451,26 @@ function SignupForm() {
                           value={formData.confirmPassword}
                           onChange={handleChange}
                           required
-                          disabled={isLoading}
-                          className="border-gray-300 focus:border-rose-400 focus:ring focus:ring-rose-200 transition-all pr-10 bg-white/70 pl-10"
+                          disabled={isSubmitting}
+                          className="pl-10 pr-10"
                         />
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Key className="h-4 w-4 text-gray-400" />
+                        <div className="input-icon">
+                          <KeyIcon />
                         </div>
                         <button
                           type="button"
                           onClick={() =>
                             setShowConfirmPassword(!showConfirmPassword)
                           }
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                          tabIndex="-1"
+                          className="password-toggle-icon"
+                          tabIndex={-1}
                         >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-5 w-5" />
-                          ) : (
-                            <Eye className="h-5 w-5" />
-                          )}
+                          {showConfirmPassword ? <EyeOff /> : <Eye />}
                         </button>
                       </div>
                     </motion.div>
-
                     <motion.div
-                      className="space-y-2"
+                      className="space-y-1.5"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.6 }}
@@ -447,14 +479,15 @@ function SignupForm() {
                         htmlFor="role"
                         className="text-gray-700 font-medium"
                       >
-                        Role
+                        I am a...
                       </Label>
                       <Select
                         onValueChange={handleRoleChange}
                         value={formData.role}
-                        disabled={isLoading}
+                        disabled={isSubmitting}
+                        required
                       >
-                        <SelectTrigger className="border-gray-300 focus:border-rose-400 focus:ring focus:ring-rose-200 transition-all bg-white/70">
+                        <SelectTrigger>
                           <SelectValue placeholder="Select your role" />
                         </SelectTrigger>
                         <SelectContent>
@@ -466,10 +499,9 @@ function SignupForm() {
                         </SelectContent>
                       </Select>
                     </motion.div>
-
                     {formData.role === "student" && (
                       <motion.div
-                        className="space-y-2"
+                        className="space-y-1.5"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
@@ -488,12 +520,12 @@ function SignupForm() {
                             placeholder="e.g., S12345678"
                             value={formData.studentId}
                             onChange={handleChange}
-                            required
-                            disabled={isLoading}
-                            className="border-gray-300 focus:border-rose-400 focus:ring focus:ring-rose-200 transition-all bg-white/70 pl-10"
+                            required={formData.role === "student"}
+                            disabled={isSubmitting}
+                            className="pl-10"
                           />
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <IdCard className="h-4 w-4 text-gray-400" />
+                          <div className="input-icon">
+                            <IdCardIcon />
                           </div>
                         </div>
                       </motion.div>
@@ -510,39 +542,32 @@ function SignupForm() {
                     >
                       <Button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-medium py-2 shadow-md hover:shadow-lg transition-all duration-300"
-                        disabled={isLoading}
+                        className="w-full bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-semibold py-3 text-base tracking-wide"
+                        disabled={isSubmitting}
                       >
-                        {isLoading ? (
-                          <span className="flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Creating account...
-                          </span>
+                        {isSubmitting ? (
+                          <Loader2 className="h-5 w-5 animate-spin mr-2" />
                         ) : (
-                          <span className="flex items-center justify-center gap-2">
-                            Sign Up
-                            <ArrowRight className="h-4 w-4" />
-                          </span>
-                        )}
+                          <ArrowRight className="h-5 w-5 mr-2" />
+                        )}{" "}
+                        {isSubmitting ? "Creating Account..." : "Sign Up"}
                       </Button>
                     </motion.div>
                   </CardFooter>
                 </form>
               </Card>
             </Tilt>
-
-            {/* Login Link */}
             <motion.div
               className="mt-6 text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
             >
-              <div className="text-sm bg-white/50 backdrop-blur-sm py-2 px-4 rounded-full shadow-sm inline-block">
+              <div className="text-sm bg-white/60 backdrop-blur-sm py-2.5 px-5 rounded-full shadow-sm inline-block text-gray-700">
                 Already have an account?{" "}
                 <Link
                   to="/login"
-                  className="font-medium text-rose-500 hover:text-rose-700 transition-colors hover:underline"
+                  className="font-semibold text-rose-600 hover:text-rose-700 hover:underline"
                 >
                   Log in
                 </Link>
@@ -551,70 +576,103 @@ function SignupForm() {
           </motion.div>
         ) : (
           <motion.div
+            key="signup-success"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex flex-col items-center justify-center p-10 bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl"
+            className="flex flex-col items-center justify-center p-10 bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl text-center max-w-md"
           >
             <motion.div
-              animate={{
-                scale: [1, 1.2, 1],
-                rotate: [0, 10, -10, 0],
-              }}
+              animate={{ scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] }}
               transition={{ duration: 0.8, ease: "easeInOut" }}
             >
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-12 w-12 text-green-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+              <div
+                className={`w-24 h-24 rounded-full flex items-center justify-center shadow-inner ${
+                  signupMessage.includes("pending")
+                    ? "bg-blue-100"
+                    : "bg-green-100"
+                }`}
+              >
+                {signupMessage.includes("pending") ? (
+                  <ClockIcon className="h-12 w-12 text-blue-500" />
+                ) : (
+                  <CheckCircleIcon className="h-12 w-12 text-green-500" />
+                )}
               </div>
             </motion.div>
             <h2 className="mt-6 text-2xl font-bold text-gray-900">
-              Account Created!
+              {signupMessage.includes("pending")
+                ? "Registration Submitted!"
+                : "Account Created & Approved!"}
             </h2>
-            <p className="mt-2 text-gray-600">
-              Welcome to UniRoom! Redirecting you to your dashboard...
+            <p className="mt-3 text-gray-600 leading-relaxed">
+              {signupMessage}
             </p>
-            <div className="mt-6">
-              <Loader2 className="h-6 w-6 animate-spin text-rose-500 mx-auto" />
-            </div>
+            {signupMessage.includes("pending approval") && (
+              <Button
+                asChild
+                className="mt-8 bg-rose-500 hover:bg-rose-600 text-base py-3 px-6"
+              >
+                <Link to="/">Go to Homepage</Link>
+              </Button>
+            )}
+            {signupMessage.includes("Redirecting") && ( // Show loader if approved and redirecting
+              <div className="mt-8">
+                <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Privacy Policy & Terms */}
-      {/* <motion.div
-        className="absolute bottom-4 text-xs text-gray-500"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.9 }}
-      >
-        <div className="flex gap-4">
-          <Link to="/privacy" className="hover:text-gray-700 transition-colors">
-            Privacy Policy
-          </Link>
-          <Link to="/terms" className="hover:text-gray-700 transition-colors">
-            Terms of Service
-          </Link>
-          <Link to="/help" className="hover:text-gray-700 transition-colors">
-            Help Center
-          </Link>
-        </div>
-      </motion.div> */}
-
-      {/* Add utility classes for animations */}
-      {/* <style jsx>{`
+      {/* Simplified CSS for icons (could also use Tailwind directly if configured) */}
+      <style jsx global>{`
+        .input-icon {
+          position: absolute;
+          inset-block: 0;
+          left: 0;
+          display: flex;
+          align-items: center;
+          padding-left: 0.75rem;
+          pointer-events: none;
+          color: #9ca3af; /* gray-400 */
+        }
+        .input-icon svg {
+          height: 1rem;
+          width: 1rem;
+        }
+        .password-toggle-icon {
+          position: absolute;
+          inset-block: 0;
+          right: 0;
+          display: flex;
+          align-items: center;
+          padding-right: 0.75rem;
+          color: #9ca3af; /* gray-400 */
+        }
+        .password-toggle-icon:hover {
+          color: #4b5563; /* gray-600 */
+        }
+        .password-toggle-icon svg {
+          height: 1.25rem;
+          width: 1.25rem;
+        }
+        .Input {
+          border-color: #d1d5db; /* gray-300 */
+        }
+        .Input:focus {
+          border-color: #fb7185; /* rose-400 */
+          box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2); /* ring-rose-200 */
+        }
+        .SelectTrigger {
+          border-color: #d1d5db;
+        }
+        .SelectTrigger[data-state="open"],
+        .SelectTrigger:focus {
+          border-color: #fb7185;
+          box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2);
+        }
         @keyframes blob {
           0% {
             transform: translate(0px, 0px) scale(1);
@@ -630,15 +688,15 @@ function SignupForm() {
           }
         }
         .animate-blob {
-          animation: blob 7s infinite;
+          animation: blob 10s infinite ease-in-out;
         }
         .animation-delay-2000 {
-          animation-delay: 2s;
+          animation-delay: -3s;
         }
         .animation-delay-4000 {
-          animation-delay: 4s;
+          animation-delay: -6s;
         }
-      `}</style> */}
+      `}</style>
     </div>
   );
 }

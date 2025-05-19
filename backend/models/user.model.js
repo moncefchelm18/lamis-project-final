@@ -1,3 +1,4 @@
+// models/user.model.js
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
@@ -28,29 +29,39 @@ const userSchema = new mongoose.Schema(
       enum: ["student", "service", "admin"],
       default: "student",
     },
-    // This is a custom student identifier, not the MongoDB _id
     studentId: {
+      // This is a custom student identifier, not the MongoDB _id
       type: String,
       unique: true,
-      sparse: true, // Allows multiple documents to have null for this field if unique constraint is on
+      sparse: true, // Allows multiple documents to have null for this field if unique
+      // Removed default: Date.now() as it's not appropriate for studentId
+    },
+    status: {
+      // NEW: User status for approval process
+      type: String,
+      enum: ["pending", "approved"],
+      default: "pending", // New users will be pending by default
+    },
+    verifiedBy: {
+      // NEW: ID of the admin who verified this user
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       default: null,
     },
     universityInfo: {
+      // This seems specific to students, consider moving or conditional
       university: String,
       faculty: String,
       year: String,
       admissionId: String,
       admissionConfirmed: Boolean,
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
+    // createdAt is handled by timestamps: true
   },
   {
-    timestamps: true,
-    toJSON: { virtuals: true }, // Ensure virtuals are included in toJSON output
-    toObject: { virtuals: true }, // Ensure virtuals are included in toObject output
+    timestamps: true, // Adds createdAt and updatedAt
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 

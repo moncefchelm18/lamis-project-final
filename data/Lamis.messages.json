@@ -1,0 +1,21 @@
+[{
+  "_id": {
+    "$oid": "682a86eaf9ef8d2077e6bbb7"
+  },
+  "residencyId": {
+    "$oid": "682a72bdf9ef8d2077e6ba37"
+  },
+  "studentId": {
+    "$oid": "682a6db7f9ef8d2077e6b96c"
+  },
+  "senderEmail": "moncef@gmail.com",
+  "content": "testing contact service",
+  "status": "read",
+  "createdAt": {
+    "$date": "2025-05-19T01:18:34.318Z"
+  },
+  "updatedAt": {
+    "$date": "2025-05-19T01:19:00.629Z"
+  },
+  "__v": 0
+}]
